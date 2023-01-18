@@ -1,0 +1,51 @@
+name: ci
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+
+jobs:
+  linux-x86_64:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - name: Install SDL2
+      run: sudo apt-get update && sudo apt-get install libsdl2-2.0-0 libsdl2-dev
+
+    - name: Build
+      run: make all -j4 BUILD_TARGET=release
+
+  windows-x86_64:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Install SDL2
+        shell: bash
+        run: |
+          curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.26.2/SDL2-devel-2.26.2-VC.zip --output ./sdl2-devel.zip
+          unzip ./sdl2-devel.zip
+          mv ./SDL2-2.26.2/ ./sdl2-dev/
+          mv ./sdl2-dev/include/ ./SDL2/
+          mv ./sdl2-dev/lib/x64/ ./SDL2-lib/
+          rm -rf ./sdl2-dev/
+
+      - name: Build
+        run: make all -j4 CC=clang BUILD_TARGET=release CFLAGS="-I. -Wall -MMD -MP -DSDL_MAIN_HANDLED=1" LFLAGS="-LSDL2-lib/ -lSDL2 -lSDL2main"
+
+  osx_x86_64:
+    runs-on: macos-11
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - name: Install SDL2
+      run: brew install sdl2
+
+    - name: Build
+      run: make all -j4 BUILD_TARGET=release
+
